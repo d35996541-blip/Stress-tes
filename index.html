@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#08080c">
+<title>HP Stress Test</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#08080c;--card:rgba(20,20,30,.7);--bd:rgba(255,255,255,.06);--tx:#e8e8f0;--dim:#8a8aa0;--gr:#22ff88;--cy:#00e5ff;--yl:#ffd60a;--rd:#ff3b5c;--pu:#a855f7;--grad:linear-gradient(135deg,#22ff88,#00e5ff,#a855f7)}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;min-height:100%;background:var(--bg);color:var(--tx);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:-1;background:radial-gradient(circle at 20% 0%,rgba(34,255,136,.12),transparent 40%),radial-gradient(circle at 80% 20%,rgba(0,229,255,.10),transparent 40%),radial-gradient(circle at 50% 100%,rgba(168,85,247,.10),transparent 50%),var(--bg)}
+.wrap{max-width:680px;margin:0 auto;padding:28px 18px 80px}
+header{text-align:center;margin-bottom:28px}
+.logo-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:100px;background:rgba(34,255,136,.08);border:1px solid rgba(34,255,136,.2);font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--gr);margin-bottom:14px;text-transform:uppercase}
+.logo-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--gr);box-shadow:0 0 8px var(--gr);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+h1{font-size:32px;font-weight:900;letter-spacing:-1px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:8px}
+.sub{font-size:13px;color:var(--dim);max-width:400px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:20px;margin-bottom:14px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.card-title{font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.score-card{display:flex;align-items:center;gap:24px;padding:24px 20px}
+.ring-wrap{position:relative;width:110px;height:110px;flex-shrink:0}
+.ring-wrap svg{transform:rotate(-90deg);width:100%;height:100%}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:8}
+.ring-fill{fill:none;stroke:url(#ringGrad);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .6s;filter:drop-shadow(0 0 6px rgba(34,255,136,.5))}
+.ring-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-num{font-size:30px;font-weight:900;font-family:'JetBrains Mono',monospace;color:var(--gr);line-height:1}
+.ring-max{font-size:10px;color:var(--dim);font-weight:600;margin-top:2px}
+.score-info{flex:1}
+.score-label{font-size:12px;color:var(--dim);margin-bottom:4px}
+.score-status{font-size:15px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.status-dot{width:8px;height:8px;border-radius:50%}
+.status-dot.ok{background:var(--gr);box-shadow:0 0 8px var(--gr)}
+.status-dot.warn{background:var(--yl);box-shadow:0 0 8px var(--yl)}
+.status-dot.bad{background:var(--rd);box-shadow:0 0 8px var(--rd)}
+.mini-stats{display:flex;gap:16px}
+.mini-stat{font-size:11px;color:var(--dim)}
+.mini-stat b{display:block;font-size:14px;color:var(--tx);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid-stat{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:12px;padding:12px 14px}
+.gs-label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:600}
+.gs-value{font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gs-value.green{color:var(--gr)}.gs-value.cyan{color:var(--cy)}.gs-value.yellow{color:var(--yl)}.gs-value.purple{color:var(--pu)}
+.metric{margin-bottom:14px}.metric:last-child{margin-bottom:0}
+.metric-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;font-size:12px}
+.metric-name{color:var(--dim);font-weight:600}
+.metric-val{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:var(--tx)}
+.metric-bar{height:6px;background:rgba(255,255,255,.05);border-radius:100px;overflow:hidden}
+.metric-fill{height:100%;border-radius:100px;width:0%;transition:width .4s;background:var(--grad)}
+.metric-fill.warn{background:linear-gradient(90deg,var(--yl),var(--rd))}
+.metric-fill.bad{background:var(--rd)}
+#log{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gr);height:180px;overflow-y:auto;line-height:1.7}
+#log .warn{color:var(--yl)}#log .danger{color:var(--rd)}
+.btn{width:100%;padding:18px;font-size:15px;font-weight:800;border:none;border-radius:16px;cursor:pointer;margin-top:8px;font-family:'Inter',sans-serif;letter-spacing:.5px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s}
+.btn-start{background:linear-gradient(135deg,var(--gr),var(--cy));color:#000;box-shadow:0 8px 24px rgba(34,255,136,.3)}
+.btn-start:active{transform:scale(.98)}
+.btn-stop{background:linear-gradient(135deg,var(--rd),#c81e3c);color:#fff;box-shadow:0 8px 24px rgba(255,59,92,.3)}
+.btn-stop:active{transform:scale(.98)}
+.hidden{display:none!important}
+#apresiasi{position:fixed;inset:0;z-index:999999;background:radial-gradient(circle at 50% 20%,#1a0a33,#05050a 70%);display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;overflow-y:auto}
+#apresiasi.show{display:flex}
+.trophy{font-size:90px;margin-bottom:12px;animation:bounce 1.4s infinite;filter:drop-shadow(0 0 30px rgba(255,215,0,.8))}
+@keyframes bounce{0%,100%{transform:translateY(0) scale(1) rotate(-3deg)}50%{transform:translateY(-18px) scale(1.1) rotate(3deg)}}
+.apr-title{font-size:30px;font-weight:900;margin-bottom:6px;background:linear-gradient(90deg,#ffd700,#fff,#ffd700,#ffaa00);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 2.5s linear infinite}
+@keyframes shine{to{background-position:200% center}}
+.stars{font-size:24px;letter-spacing:8px;margin:6px 0 18px;color:#ffd700;text-shadow:0 0 16px rgba(255,215,0,.6)}
+.apr-sub{font-size:14px;color:#b0b0c0;line-height:1.6;max-width:400px;margin-bottom:24px}
+.apr-card{background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.25);border-radius:20px;padding:20px;margin-bottom:16px;max-width:400px;width:100%}
+.apr-card h3{color:#ffd700;font-size:12px;letter-spacing:2px;margin-bottom:14px;font-weight:800}
+.apr-stat{display:flex;justify-content:space-between;padding:9px 0;font-size:13px;color:#ddd;border-bottom:1px dashed rgba(255,215,0,.15)}
+.apr-stat:last-child{border-bottom:none}
+.apr-stat span:last-child{color:#ffd700;font-weight:800;font-family:'JetBrains Mono',monospace}
+.apr-quote{font-size:13px;color:#c0c0d0;font-style:italic;line-height:1.7;max-width:400px;padding:16px 20px;border-left:3px solid #ffd700;background:rgba(255,215,0,.05);border-radius:12px;text-align:left;margin-bottom:20px}
+.btn-wa{background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;padding:18px 36px;font-size:15px;font-weight:900;border:none;border-radius:14px;cursor:pointer;box-shadow:0 8px 24px rgba(37,211,102,.4);display:inline-flex;align-items:center;gap:10px;margin-bottom:12px;width:100%;max-width:400px;justify-content:center;font-family:'Inter',sans-serif}
+.btn-wa:active{transform:scale(.97)}
+.apr-note{font-size:12px;color:#888;max-width:400px;margin-bottom:12px;line-height:1.5}
+#gpuCanvas,#canvas2d{display:none}
+@media(max-width:400px){h1{font-size:26px}.score-card{flex-direction:column;text-align:center;gap:16px}.mini-stats{justify-content:center}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div class="logo-badge">Stress Test v3</div>
+<h1>HP Stress Test</h1>
+<div class="sub">Uji seberapa jauh HP kamu bertahan sebelum browser menyerah</div>
+</header>
+
+<div class="card score-card">
+<div class="ring-wrap">
+<svg viewBox="0 0 120 120">
+<defs><linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#22ff88"/><stop offset="50%" stop-color="#00e5ff"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs>
+<circle class="ring-bg" cx="60" cy="60" r="52"/>
+<circle class="ring-fill" id="ringFill" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+</svg>
+<div class="ring-text"><div class="ring-num" id="levelNum">0</div><div class="ring-max">/ 50</div></div>
+</div>
+<div class="score-info">
+<div class="score-label">Level Beban</div>
+<div class="score-status"><span class="status-dot ok" id="statusDot"></span><span id="statusText">Siap</span></div>
+<div class="mini-stats">
+<div class="mini-stat">FPS<b id="fpsVal">60</b></div>
+<div class="mini-stat">RAM<b id="ramVal">0MB</b></div>
+<div class="mini-stat">Uptime<b id="uptimeVal">0s</b></div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title"><span>📊</span> Status Perangkat</div>
+<div class="grid-2">
+<div class="grid-stat"><div class="gs-label">CPU Core</div><div class="gs-value green" id="cpuCore">-</div></div>
+<div class="grid-stat"><div class="gs-label">Device Memory</div><div class="gs-value cyan" id="devMem">-</div></div>
+<div class="grid-stat"><div class="gs-label">JS Heap</div><div class="gs-value purple" id="jsHeap">-</div></div>
+<div class="grid-stat"><div class="gs-label">Battery</div><div class="gs-value yellow" id="battInfo">-</div></div>
+<div class="grid-stat"><div class="gs-label">Screen</div><div class="gs-value" id="screenInfo">-</div></div>
+<div class="grid-stat"><div class="gs-label">GPU</div><div class="gs-value" id="gpuInfo">-</div></div>
+<div class="grid-stat"><div class="gs-label">Storage</div><div class="gs-value cyan" id="storageInfo">-</div></div>
+<div class="grid-stat"><div class="gs-label">Audio</div><div class="gs-value green" id="audioInfo">-</div></div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title"><span>🔥</span> Live Metrics</div>
+<div class="metric"><div class="metric-head"><span class="metric-name">FPS</span><span class="metric-val" id="mFps">60 FPS</span></div><div class="metric-bar"><div class="metric-fill" id="mFpsBar" style="width:100%"></div></div></div>
+<div class="metric"><div class="metric-head"><span class="metric-name">RAM</span><span class="metric-val" id="mRam">0 MB</span></div><div class="metric-bar"><div class="metric-fill" id="mRamBar"></div></div></div>
+<div class="metric"><div class="metric-head"><span class="metric-name">Worker</span><span class="metric-val" id="workerVal">0</span></div><div class="metric-bar"><div class="metric-fill" id="mWorkerBar"></div></div></div>
+<div class="metric"><div class="metric-head"><span class="metric-name">DOM</span><span class="metric-val" id="domVal">0</span></div><div class="metric-bar"><div class="metric-fill" id="mDomBar"></div></div></div>
+<div class="metric"><div class="metric-head"><span class="metric-name">GPU</span><span class="metric-val" id="gpuDrawVal">0</span></div><div class="metric-bar"><div class="metric-fill" id="mGpuBar"></div></div></div>
+<div class="metric"><div class="metric-head"><span class="metric-name">Storage</span><span class="metric-val" id="storageVal">0 MB</span></div><div class="metric-bar"><div class="metric-fill" id="mStorageBar"></div></div></div>
+</div>
+
+<div class="card">
+<div class="card-title"><span>📜</span> Log Test</div>
+<div id="log"><div>[system] Menunggu perintah...</div></div>
+</div>
+
+<button id="startBtn" class="btn btn-start">▶ MULAI TEST</button>
+<button id="stopBtn" class="btn btn-stop hidden">■ HENTIKAN TEST</button>
+</div>
+
+<div id="apresiasi">
+<div class="trophy">🏆</div>
+<div class="apr-title">HP KAMU LUAR BIASA!</div>
+<div class="stars">★★★★★</div>
+<div class="apr-sub">Selamat! HP kamu berhasil menuntaskan seluruh 50 level stress test tanpa menyerah. Kamu berhak mendapatkan hadiah!</div>
+<div class="apr-card">
+<h3>📋 HASIL AKHIR</h3>
+<div class="apr-stat"><span>Level</span><span id="aprLevel">50/50</span></div>
+<div class="apr-stat"><span>Waktu</span><span id="aprTime">-</span></div>
+<div class="apr-stat"><span>FPS Akhir</span><span id="aprFps">-</span></div>
+<div class="apr-stat"><span>GPU</span><span id="aprGpu">-</span></div>
+<div class="apr-stat"><span>Storage</span><span id="aprStorage">-</span></div>
+<div class="apr-stat"><span>Worker</span><span id="aprWorker">-</span></div>
+</div>
+<div class="apr-quote" id="aprQuote">"Perangkat yang kuat bukan yang tidak pernah lelah, tapi yang mampu berdiri tegak sampai garis akhir."</div>
+<div class="apr-note">Tekan tombol di bawah untuk klaim hadiah via WhatsApp</div>
+<button class="btn-wa" id="waBtn">📱 HUBUNGI VIA WHATSAPP</button>
+<button class="btn btn-stop" id="aprClose" style="max-width:400px;margin:0 auto">TUTUP</button>
+</div>
+
+<canvas id="gpuCanvas" width="512" height="512"></canvas>
+<canvas id="canvas2d" width="1024" height="1024"></canvas>
+
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+var MAX_LEVEL=50;
+var WA_NUMBER="6281563426001";
+var WA_TEXT="Halo bang, saya berhasil menyelesaikan 50 level stress test. Saya mau klaim hadiahnya. Terima kasih!";
+var running=false,level=0,maxLevel=0,startTime=0;
+var workers=[],memoryHog=[],intervals=[];
+var glCtx=null,glProgram=null,glBuffer=null;
+var canvas2dCtx=null,audioCtx=null,audioOsc=[];
+var storageWritten=0,gpuDrawCalls=0;
+
+function log(msg,type){
+var el=$("log"),d=document.createElement("div");
+d.textContent="["+new Date().toLocaleTimeString()+"] "+msg;
+if(type==="warn")d.className="warn";
+if(type==="danger")d.className="danger";
+el.appendChild(d);el.scrollTop=el.scrollHeight;
+while(el.children.length>200)el.removeChild(el.firstChild);
+}
+
+function loadDeviceInfo(){
+$("cpuCore").textContent=navigator.hardwareConcurrency||"?";
+$("devMem").textContent=navigator.deviceMemory?navigator.deviceMemory+" GB":"N/A";
+$("jsHeap").textContent=performance.memory?Math.round(performance.memory.jsHeapSizeLimit/1048576)+" MB":"N/A";
+$("screenInfo").textContent=window.screen.width+"x"+window.screen.height;
+if(navigator.getBattery){navigator.getBattery().then(function(b){$("battInfo").textContent=Math.round(b.level*100)+"%"+(b.charging?" ⚡":"")}).catch(function(){$("battInfo").textContent="N/A"})}else{$("battInfo").textContent="N/A"}
+try{var c=document.createElement("canvas");var gl=c.getContext("webgl")||c.getContext("experimental-webgl");
+if(gl){var ext=gl.getExtension("WEBGL_debug_renderer_info");var gpu=ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER);$("gpuInfo").textContent=String(gpu).slice(0,24)}else{$("gpuInfo").textContent="no WebGL"}}catch(e){$("gpuInfo").textContent="error"}
+if(navigator.storage&&navigator.storage.estimate){navigator.storage.estimate().then(function(est){$("storageInfo").textContent=Math.round(est.quota/1048576)+" MB"}).catch(function(){$("storageInfo").textContent="N/A"})}else{$("storageInfo").textContent="N/A"}
+$("audioInfo").textContent=(window.AudioContext||window.webkitAudioContext)?"OK":"N/A";
+}
+
+var fpsFrames=0,fpsLast=performance.now(),currentFPS=60;
+function fpsLoop(){
+fpsFrames++;var now=performance.now();
+if(now-fpsLast>=1000){
+currentFPS=Math.round(fpsFrames*1000/(now-fpsLast));
+$("fpsVal").textContent=currentFPS;
+$("mFps").textContent=currentFPS+" FPS";
+var bar=$("mFpsBar");bar.style.width=Math.min(currentFPS,60)/60*100+"%";
+bar.className="metric-fill"+(currentFPS<20?" bad":currentFPS<40?" warn":"");
+fpsFrames=0;fpsLast=now;
+}
+requestAnimationFrame(fpsLoop);
+}
+
+function updateMetrics(){
+if(performance.memory){var mb=performance.memory.usedJSHeapSize/1048576;$("ramVal").textContent=Math.round(mb)+"MB";$("mRam").textContent=mb.toFixed(1)+" MB";$("mRamBar").style.width=Math.min(mb/500*100,100)+"%"}else{$("ramVal").textContent=memoryHog.length+"b"}
+$("workerVal").textContent=workers.length;$("mWorkerBar").style.width=Math.min(workers.length/30*100,100)+"%";
+var dom=document.getElementsByTagName("*").length;$("domVal").textContent=dom;$("mDomBar").style.width=Math.min(dom/5000*100,100)+"%";
+$("gpuDrawVal").textContent=gpuDrawCalls;$("mGpuBar").style.width=Math.min(gpuDrawCalls/2000*100,100)+"%";
+$("storageVal").textContent=(storageWritten/1048576).toFixed(1)+" MB";$("mStorageBar").style.width=Math.min(storageWritten/1048576,100)+"%";
+if(running)$("uptimeVal").textContent=Math.round((Date.now()-startTime)/1000)+"s";
+}
+
+function burnCPU(ms){var s=performance.now(),x=0;while(performance.now()-s<ms){x+=Math.sqrt(Math.random()*999999);for(var i=0;i<3000;i++)x=x*1.000001+1}}
+function eatMemory(b,sz){try{for(var i=0;i<b;i++)memoryHog.push(new Array(sz).fill(Math.random()))}catch(e){log("RAM penuh","danger")}}
+function thrashDOM(n){var f=document.createDocumentFragment();for(var i=0;i<n;i++){var d=document.createElement("div");d.textContent="x";d.style.display="none";f.appendChild(d)}document.body.appendChild(f);while(document.body.lastChild&&document.body.lastChild.tagName==="DIV"&&document.body.lastChild.textContent==="x")document.body.removeChild(document.body.lastChild)}
+
+function spawnWorker(){
+try{
+var code="setInterval(function(){var x=0;for(var i=0;i<5e6;i++)x+=Math.random();postMessage(x)},20)";
+var blob=new Blob([code],{type:"application/javascript"});
+workers.push(new Worker(URL.createObjectURL(blob)));
+}catch(e){log("Worker gagal","danger")}
+}
+
+function initGPU(){
+if(glCtx)return true;
+var c=$("gpuCanvas");glCtx=c.getContext("webgl")||c.getContext("experimental-webgl");
+if(!glCtx){log("WebGL tidak didukung","danger");return false}
+var vsSrc="attribute vec2 pos;void main(){gl_Position=vec4(pos,0.,1.)}";
+var fsSrc="precision highp float;uniform float t;void main(){gl_FragColor=vec4(sin(t)*.5+.5,cos(t*1.3)*.5+.5,sin(t*.7)*.5+.5,1.)}";
+function comp(type,src){var s=glCtx.createShader(type);glCtx.shaderSource(s,src);glCtx.compileShader(s);return s}
+var vs=comp(glCtx.VERTEX_SHADER,vsSrc);var fs=comp(glCtx.FRAGMENT_SHADER,fsSrc);
+glProgram=glCtx.createProgram();glCtx.attachShader(glProgram,vs);glCtx.attachShader(glProgram,fs);glCtx.linkProgram(glProgram);glCtx.useProgram(glProgram);
+glBuffer=glCtx.createBuffer();glCtx.bindBuffer(glCtx.ARRAY_BUFFER,glBuffer);
+glCtx.bufferData(glCtx.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),glCtx.STATIC_DRAW);
+var pl=glCtx.getAttribLocation(glProgram,"pos");glCtx.enableVertexAttribArray(pl);glCtx.vertexAttribPointer(pl,2,glCtx.FLOAT,false,0,0);
+return true;
+}
+
+function stressGPU(it){if(!initGPU())return;var tl=glCtx.getUniformLocation(glProgram,"t");for(var i=0;i<it;i++){glCtx.uniform1f(tl,performance.now()/1000+i);glCtx.drawArrays(glCtx.TRIANGLE_STRIP,0,4);gpuDrawCalls++}glCtx.finish()}
+
+function stressCanvas2D(it){
+if(!canvas2dCtx)canvas2dCtx=$("canvas2d").getContext("2d");
+if(!canvas2dCtx)return;
+var w=1024,h=1024;
+for(var i=0;i<it;i++){canvas2dCtx.fillStyle="hsl("+(i*7%360)+",100%,50%)";canvas2dCtx.fillRect(0,0,w,h);for(var j=0;j<50;j++){canvas2dCtx.beginPath();canvas2dCtx.arc(Math.random()*w,Math.random()*h,Math.random()*100,0,Math.PI*2);canvas2dCtx.fill()}}
+canvas2dCtx.getImageData(0,0,100,100);
+}
+
+function stressStorage(mb){
+try{
+var size=Math.floor(mb*1048576);var buf=new Uint8Array(size);
+for(var i=0;i<size;i+=4096)buf[i]=i%256;
+var blob=new Blob([buf],{type:"application/octet-stream"});
+var url=URL.createObjectURL(blob);
+var xhr=new XMLHttpRequest();xhr.open("GET",url,false);xhr.send();
+storageWritten+=size;URL.revokeObjectURL(url);
+}catch(e){log("Storage penuh","danger")}
+}
+
+function stressAudio(n){
+try{
+if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+for(var i=0;i<n;i++){var o=audioCtx.createOscillator();var g=audioCtx.createGain();g.gain.value=0.0001;o.frequency.value=200+Math.random()*8000;o.type=["sine","square","sawtooth","triangle"][i%4];o.connect(g);g.connect(audioCtx.destination);o.start();audioOsc.push(o)}
+}catch(e){log("Audio gagal","danger")}
+}
+
+function setStatus(t,c){$("statusText").textContent=t;$("statusDot").className="status-dot "+c}
+
+function levelUp(){
+if(!running)return;
+if(level>=MAX_LEVEL){running=false;stopTest(true);showApresiasi();return}
+level++;
+if(level>maxLevel)maxLevel=level;
+$("levelNum").textContent=level;
+$("ringFill").style.strokeDashoffset=326.7-(level/MAX_LEVEL*326.7);
+if(currentFPS<10||level>35)setStatus("KRITIS","bad");
+else if(currentFPS<30||level>20)setStatus("BERAT","warn");
+else setStatus("STABIL","ok");
+burnCPU(50+level*15);
+if(level%2===0)eatMemory(1+Math.floor(level/2),200000+level*50000);
+if(level%3===0)thrashDOM(1000+level*200);
+if(level%4===0)spawnWorker();
+if(level%4===1)stressGPU(10+level*2);
+if(level%5===0)stressCanvas2D(2+Math.floor(level/5));
+if(level%6===0)stressStorage(1+Math.floor(level/6));
+if(level%7===0)stressAudio(1+Math.floor(level/7));
+if(level%5===0)log("Level "+level+"/"+MAX_LEVEL+" — FPS:"+currentFPS+" GPU:"+gpuDrawCalls,level>40?"danger":level>25?"warn":"");
+if(running){var delay=Math.max(800-level*12,150);intervals.push(setTimeout(levelUp,delay))}
+}
+
+function showApresiasi(){
+var totalSec=Math.round((Date.now()-startTime)/1000);
+var m=Math.floor(totalSec/60),s=totalSec%60;
+$("aprLevel").textContent=maxLevel+" / "+MAX_LEVEL;
+$("aprTime").textContent=m+"m "+s+"s";
+$("aprFps").textContent=currentFPS+" FPS";
+$("aprGpu").textContent=gpuDrawCalls+" draw";
+$("aprStorage").textContent=(storageWritten/1048576).toFixed(1)+" MB";
+$("aprWorker").textContent=workers.length+" worker";
+var q=currentFPS>=30?
+'"HP kamu bukan cuma kuat — dia elite. Melewati 50 level beban brutal dengan FPS masih '+currentFPS+'. Perangkat kelas flagship!"':
+'"HP kamu bertahan sampai garis akhir. Mungkin FPS turun, tapi tidak menyerah. Itu namanya ketangguhan sejati."';
+$("aprQuote").textContent=q;
+$("apresiasi").classList.add("show");
+log("🏆 SELESAI — HP bertahan sampai level "+MAX_LEVEL,"warn");
+}
+
+function stopTest(skip){
+running=false;
+intervals.forEach(function(id){clearTimeout(id);clearInterval(id)});
+intervals=[];
+workers.forEach(function(w){try{w.terminate()}catch(e){}});workers=[];
+memoryHog.length=0;
+audioOsc.forEach(function(o){try{o.stop()}catch(e){}});audioOsc=[];
+if(audioCtx){try{audioCtx.close()}catch(e){}audioCtx=null}
+glCtx=null;glProgram=null;glBuffer=null;canvas2dCtx=null;
+$("startBtn").classList.remove("hidden");
+$("stopBtn").classList.add("hidden");
+if(!skip){setStatus("Dihentikan","warn");log("Dihentikan manual — level "+maxLevel,"warn")}
+}
+
+function startTest(){
+if(running)return;
+running=true;level=0;maxLevel=0;startTime=Date.now();gpuDrawCalls=0;storageWritten=0;
+$("startBtn").classList.add("hidden");
+$("stopBtn").classList.remove("hidden");
+$("log").innerHTML="";
+log("Test dimulai — target "+MAX_LEVEL+" level","warn");
+log("Uji: CPU, RAM, DOM, Worker, GPU, Canvas2D, Storage, Audio");
+intervals.push(setInterval(updateMetrics,500));
+intervals.push(setInterval(function(){if(running)log("Heartbeat — level "+level+"/"+MAX_LEVEL)},10000));
+setTimeout(levelUp,500);
+}
+
+function openWA(){
+var url="https://wa.me/"+WA_NUMBER+"?text="+encodeURIComponent(WA_TEXT);
+window.open(url,"_blank");
+}
+
+window.addEventListener("load",function(){
+loadDeviceInfo();
+fpsLoop();
+setInterval(updateMetrics,1000);
+log("Device info dimuat");
+log("Tekan MULAI TEST");
+$("startBtn").addEventListener("click",startTest);
+$("stopBtn").addEventListener("click",function(){stopTest(false)});
+$("waBtn").addEventListener("click",openWA);
+$("aprClose").addEventListener("click",function(){$("apresiasi").classList.remove("show");setStatus("Selesai","ok")});
+});
+
+window.addEventListener("beforeunload",function(){
+running=false;
+intervals.forEach(function(id){clearTimeout(id);clearInterval(id)});
+workers.forEach(function(w){try{w.terminate()}catch(e){}});
+memoryHog.length=0;
+});
+})();
+</script>
+</body>
+</html>
