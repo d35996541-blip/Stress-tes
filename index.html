@@ -3,118 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Layer 7 HTTP Flood - Live Monitor</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;500;700&display=swap" rel="stylesheet">
+    <title>NEXUS - Core Overload Benchmark</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #050505;
-            --text: #ff3333;
-            --border: #440000;
-            --glow: rgba(255, 0, 0, 0.4);
+            --theme: #00f0ff;
+            --bg: #050508;
+            --danger: #ff003c;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Fira Code', monospace;
+            font-family: 'Share Tech Mono', monospace;
             user-select: none;
         }
 
         body {
             background-color: var(--bg);
-            color: var(--text);
+            color: var(--theme);
+            overflow: hidden;
             height: 100vh;
+            width: 100vw;
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
-            overflow: hidden;
+            align-items: center;
         }
 
-        .hud-container {
+        /* Canvas for GPU Rendering */
+        #core-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Cyberpunk UI Overlay */
+        .hud-overlay {
+            position: relative;
+            z-index: 10;
             width: 90%;
-            max-width: 700px;
-            border: 1px solid var(--border);
-            background: rgba(10, 0, 0, 0.8);
+            max-width: 600px;
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            background: linear-gradient(135deg, rgba(5,5,8,0.9) 0%, rgba(0,20,30,0.8) 100%);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.1), inset 0 0 20px rgba(0, 240, 255, 0.05);
             padding: 30px;
-            box-shadow: 0 0 20px var(--glow), inset 0 0 20px rgba(255, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
+            transition: all 0.5s ease;
+        }
+
+        /* Glitch Title */
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--theme);
+            padding-bottom: 10px;
             position: relative;
         }
 
-        /* Radar Scanner Effect */
-        .hud-container::before {
+        .title::after {
             content: '';
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(255, 0, 0, 0.05) 3px,
-                rgba(255, 0, 0, 0.05) 3px
-            );
-            pointer-events: none;
-            z-index: 2;
+            bottom: -2px;
+            right: 0;
+            width: 50%;
+            height: 3px;
+            background: var(--theme);
         }
 
-        .header {
-            text-align: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-
-        .header h1 {
-            font-size: 1.5rem;
-            letter-spacing: 5px;
-            text-shadow: 0 0 10px var(--text);
-        }
-
-        .target-info {
-            font-size: 0.9rem;
-            color: #888;
-            margin-top: 10px;
-        }
-
-        .target-info span { color: #fff; }
-
-        .monitor-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .metric-box {
-            background: rgba(255, 0, 0, 0.05);
-            border: 1px solid var(--border);
-            padding: 15px;
-            text-align: center;
-            position: relative;
-        }
-
-        .metric-label {
-            font-size: 0.8rem;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
-        }
-
-        .metric-value {
-            font-size: 2rem;
-            font-weight: 700;
-            text-shadow: 0 0 10px var(--text);
-        }
-
-        .log-panel {
+        /* Terminal Data Stream */
+        .terminal {
             height: 120px;
-            background: #000;
-            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 240, 255, 0.2);
             padding: 10px;
-            font-size: 0.75rem;
-            color: #aaa;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
             overflow-y: hidden;
             display: flex;
             flex-direction: column;
@@ -124,172 +96,266 @@
 
         .log-line {
             margin: 2px 0;
+            opacity: 0.8;
+            animation: fadeIn 0.2s ease-in;
         }
-        .log-line.error { color: var(--text); }
-        .log-line.success { color: #555; }
 
-        .btn-strike {
+        /* Stats Grid */
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: rgba(0, 240, 255, 0.05);
+            border-left: 3px solid var(--theme);
+            padding: 10px;
+        }
+
+        .stat-label { font-size: 10px; color: #888; text-transform: uppercase; }
+        .stat-value { font-size: 22px; font-weight: bold; color: #fff; }
+
+        /* Initiate Button */
+        .btn-initiate {
             width: 100%;
-            background: transparent;
-            color: var(--text);
-            border: 1px solid var(--text);
             padding: 15px;
-            font-size: 1rem;
-            font-weight: 700;
+            background: transparent;
+            color: var(--theme);
+            border: 1px solid var(--theme);
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
             letter-spacing: 4px;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
             transition: 0.3s;
-            text-transform: uppercase;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
         }
 
-        .btn-strike:hover, .btn-strike.active {
-            background: var(--text);
+        .btn-initiate:hover {
+            background: var(--theme);
             color: var(--bg);
-            box-shadow: 0 0 20px var(--text);
+            box-shadow: 0 0 20px var(--theme);
         }
 
-        .server-down {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 3rem;
-            font-weight: 700;
+        /* State: MELTDOWN (Changes everything to red) */
+        body.meltdown {
+            --theme: #ff003c;
+            animation: screenShake 0.5s infinite;
+        }
+
+        body.meltdown .btn-initiate {
+            background: var(--theme);
             color: #fff;
-            background: rgba(255,0,0,0.9);
-            padding: 20px 40px;
-            border: 2px solid #fff;
-            text-shadow: 0 0 20px #000;
-            box-shadow: 0 0 50px red;
-            display: none;
-            z-index: 10;
-            text-align: center;
-            width: 100%;
+            pointer-events: none;
+            animation: pulseBg 0.2s infinite;
         }
 
-        .blink { animation: blinker 1s linear infinite; }
-        @keyframes blinker { 50% { opacity: 0; } }
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 0.8; transform: translateX(0); } }
+        @keyframes screenShake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        @keyframes pulseBg { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
     </style>
 </head>
 <body>
 
-    <div class="hud-container">
-        <div class="server-down" id="downAlert">SERVER DOWN<br><span style="font-size:1rem; font-weight:300;">CONNECTION REFUSED</span></div>
+    <!-- Particle GPU Engine -->
+    <canvas id="core-canvas"></canvas>
 
-        <div class="header">
-            <h1>NETWORK STRESS PROTOCOL</h1>
-            <div class="target-info">TARGET URI: <span id="targetUrl">DETECTING...</span></div>
-        </div>
-
-        <div class="monitor-grid">
-            <div class="metric-box">
-                <div class="metric-label">Requests Sent</div>
-                <div class="metric-value" id="reqCount">0</div>
+    <!-- HUD Interface -->
+    <div class="hud-overlay" id="hud">
+        <div class="title">SYS.CORE // BENCHMARK</div>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-label">Frame Rate (FPS)</div>
+                <div class="stat-value" id="fps-counter">60.0</div>
             </div>
-            <div class="metric-box">
-                <div class="metric-label">Errors / Dropped</div>
-                <div class="metric-value" id="errCount">0</div>
+            <div class="stat-box">
+                <div class="stat-label">Rendered Entities</div>
+                <div class="stat-value" id="entity-counter">150</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">CPU Threads</div>
+                <div class="stat-value" id="cpu-counter">IDLE</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">RAM Allocated</div>
+                <div class="stat-value" id="ram-counter">12 MB</div>
             </div>
         </div>
 
-        <div class="log-panel" id="logPanel">
-            <div class="log-line">> AWAITING COMMAND...</div>
+        <div class="terminal" id="terminal">
+            <div class="log-line">> SYSTEM READY.</div>
+            <div class="log-line">> WAITING FOR STRESS INITIATION...</div>
         </div>
 
-        <button class="btn-strike" id="strikeBtn" onclick="initiateStrike()">INITIATE SELF-DDOS</button>
+        <button class="btn-initiate" id="start-btn" onclick="initiateMeltdown()">INITIATE STRESS TEST</button>
     </div>
 
     <script>
-        let isAttacking = false;
-        let requests = 0;
-        let errors = 0;
-        let attackIntervals = [];
-        
-        // Target adalah URL website ini sendiri
-        const target = window.location.href.split('?')[0]; 
-        document.getElementById('targetUrl').innerText = target;
+        // --- VISUAL ENGINE (GPU STRESS) ---
+        const canvas = document.getElementById('core-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+        let isMeltdown = false;
 
-        const logPanel = document.getElementById('logPanel');
-        
-        function log(msg, type = 'success') {
-            const line = document.createElement('div');
-            line.className = `log-line ${type}`;
-            line.innerText = `> ${msg}`;
-            logPanel.appendChild(line);
-            if (logPanel.children.length > 7) {
-                logPanel.removeChild(logPanel.firstChild);
-            }
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
         }
+        window.addEventListener('resize', resize);
+        resize();
 
-        // Fungsi menembak 1 request
-        async function fireRequest() {
-            // Tambah parameter random agar server tidak bisa menggunakan cache
-            const cacheBuster = `?stress=${Math.random().toString(36).substring(7)}`;
-            
-            try {
-                // Menggunakan mode no-cors agar browser mengabaikan keamanan lintas origin sementara
-                const response = await fetch(target + cacheBuster, {
-                    method: 'GET',
-                    mode: 'no-cors',
-                    cache: 'no-store'
-                });
-                
-                requests++;
-                // Jika request mengembalikan status selain 200-299 atau gagal terhubung
-                if (response.status === 429 || response.status >= 500 || response.type === 'error') {
-                    errors++;
-                    log(`HTTP ${response.status || 'FAIL'} - PAYLOAD DROPPED`, 'error');
-                } else {
-                    if (requests % 10 === 0) log(`PAYLOAD DELIVERED (${requests})`);
+        class Particle {
+            constructor() {
+                this.x = width / 2;
+                this.y = height / 2;
+                this.angle = Math.random() * Math.PI * 2;
+                this.speed = Math.random() * 2 + 0.5;
+                this.radius = Math.random() * 2 + 1;
+                this.color = isMeltdown ? `rgba(255, 0, 60, ${Math.random()})` : `rgba(0, 240, 255, ${Math.random()})`;
+            }
+            update() {
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+                // If it goes off screen, reset to center
+                if(this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
+                    this.x = width / 2;
+                    this.y = height / 2;
                 }
-            } catch (e) {
-                requests++;
-                errors++;
-                log(`CONNECTION REFUSED - TARGET UNREACHABLE`, 'error');
             }
-            
-            updateMonitor();
-        }
-
-        function updateMonitor() {
-            document.getElementById('reqCount').innerText = requests.toLocaleString();
-            document.getElementById('errCount').innerText = errors.toLocaleString();
-
-            // Jika error terlalu banyak, asumsikan server down atau memblokir IP kita
-            if (errors > 150) {
-                declareVictory();
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
             }
         }
 
-        function initiateStrike() {
-            if (isAttacking) return;
-            isAttacking = true;
-            
-            const btn = document.getElementById('strikeBtn');
-            btn.classList.add('active');
-            btn.innerText = "ATTACK IN PROGRESS...";
-            btn.classList.add('blink');
+        // Setup initial chill particles
+        for(let i = 0; i < 150; i++) particles.push(new Particle());
 
-            log("INITIATING LAYER 7 HTTP FLOOD...");
-            log(`LOCKING TARGET: ${target}`);
+        // FPS Calculation
+        let lastTime = performance.now();
+        let frames = 0;
+        let fps = 60;
 
-            // Jalankan 30 thread bersamaan yang menembak tanpa jeda
-            for(let i = 0; i < 30; i++) {
-                let interval = setInterval(fireRequest, 50); // Tiap thread menembak setiap 50ms
-                attackIntervals.push(interval);
+        function render() {
+            ctx.fillStyle = isMeltdown ? 'rgba(5, 0, 2, 0.1)' : 'rgba(5, 5, 8, 0.2)';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.globalCompositeOperation = 'lighter';
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            ctx.globalCompositeOperation = 'source-over';
+
+            // Calculate FPS
+            const now = performance.now();
+            frames++;
+            if (now - lastTime >= 1000) {
+                fps = frames;
+                frames = 0;
+                lastTime = now;
+                document.getElementById('fps-counter').innerText = fps;
+                
+                if (isMeltdown) {
+                    logTerminal(`WARN: FPS DROPPED TO ${fps}`);
+                }
             }
+
+            requestAnimationFrame(render);
+        }
+        render();
+
+        // --- TERMINAL LOGIC ---
+        const terminal = document.getElementById('terminal');
+        function logTerminal(msg) {
+            const line = document.createElement('div');
+            line.className = 'log-line';
+            line.innerText = `> ${msg}`;
+            terminal.appendChild(line);
+            if (terminal.children.length > 6) terminal.removeChild(terminal.firstChild);
         }
 
-        function declareVictory() {
-            if (!isAttacking) return;
-            // Hentikan tembakan
-            attackIntervals.forEach(clearInterval);
+        // --- THE KILL SWITCH (RAM + CPU OVERLOAD) ---
+        // This array will hold massive amounts of junk data until the RAM bursts
+        let memoryLeak = []; 
+        let ramUsage = 12;
+
+        function initiateMeltdown() {
+            if (isMeltdown) return;
+            isMeltdown = true;
+
+            // UI Changes
+            document.body.classList.add('meltdown');
+            document.getElementById('start-btn').innerText = "FATAL OVERLOAD IN PROGRESS";
+            document.getElementById('cpu-counter').innerText = "MAX LOCKED";
             
-            document.getElementById('strikeBtn').classList.remove('blink');
-            document.getElementById('strikeBtn').innerText = "TARGET NEUTRALIZED";
+            logTerminal("INITIATING CORE OVERLOAD...");
+            logTerminal("INJECTING MEMORY LEAK...");
+
+            // 1. GPU OVERLOAD: Spawn 20,000 particles at once
+            for(let i = 0; i < 20000; i++) {
+                particles.push(new Particle());
+            }
+            document.getElementById('entity-counter').innerText = particles.length.toLocaleString();
+
+            // 2. RAM & CPU ASSASSINATION INTERVAL
+            let stressLevel = 0;
             
-            // Tampilkan Alert Merah Besar
-            document.getElementById('downAlert').style.display = 'block';
-            log("TARGET IS OFFLINE / RATE LIMITED.", 'error');
+            const killerInterval = setInterval(() => {
+                stressLevel++;
+                
+                // CPU BURN: Heavy synchronous mathematical loops
+                let garbageMath = 0;
+                for (let i = 0; i < 100000; i++) {
+                    garbageMath += Math.sqrt(Math.random() * 99999) * Math.tan(Math.random());
+                }
+
+                // RAM LEAK: Push gigantic arrays into memory (Approx 5MB - 10MB per tick)
+                // When RAM is full, Android OS will immediately Force Close the app
+                try {
+                    const junkData = new Array(1000000).fill("OVERLOAD_" + Math.random());
+                    memoryLeak.push(junkData);
+                    
+                    ramUsage += 15; // Fake tracker based on array size
+                    document.getElementById('ram-counter').innerText = ramUsage + " MB";
+                    
+                    if(stressLevel % 5 === 0) {
+                        logTerminal(`CRITICAL: MEMORY INFLATED +${ramUsage}MB`);
+                    }
+                } catch (e) {
+                    // If it errors out, the browser is about to crash
+                    logTerminal("FATAL ERROR: MEMORY LIMIT REACHED");
+                }
+
+                // Add even MORE particles exponentially
+                if (particles.length < 100000) {
+                    for(let i = 0; i < 5000; i++) particles.push(new Particle());
+                    document.getElementById('entity-counter').innerText = particles.length.toLocaleString();
+                }
+
+            }, 50); // Runs every 50 milliseconds
         }
     </script>
 </body>
